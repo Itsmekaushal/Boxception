@@ -5,7 +5,6 @@ const paddingStep = 30;
 const colors = ["#ffcccc", "#ccffcc", "#ccccff", "#ffe0b3"];
 let squares = [0, 1, 2, 3];
 let draggedId = null;
-let draggedSquare = null;
 
 function createSquare(id) {
   const square = document.createElement("div");
@@ -21,15 +20,13 @@ function createSquare(id) {
 
   square.addEventListener("dragstart", (e) => {
     draggedId = id;
-    draggedSquare = square;
     square.style.opacity = 0.4;
     disableOtherSquares(id);
   });
 
   square.addEventListener("dragend", () => {
     draggedId = null;
-    draggedSquare.style.opacity = 1;
-    draggedSquare = null;
+    square.style.opacity = 1;
     enableAllSquares();
   });
 
@@ -62,14 +59,6 @@ function enableAllSquares() {
   });
 }
 
-function swapSquares(draggedId, targetId) {
-  const draggedIndex = squares.indexOf(draggedId);
-  const targetIndex = squares.indexOf(targetId);
-  if (draggedIndex !== -1 && targetIndex !== -1) {
-    [squares[draggedIndex], squares[targetIndex]] = [squares[targetIndex], squares[draggedIndex]];
-  }
-}
-
 function renderSquares(order) {
   container.innerHTML = "";
   order.forEach((id, index) => {
@@ -89,12 +78,10 @@ container.addEventListener("dragover", (e) => e.preventDefault());
 container.addEventListener("drop", (e) => {
   e.preventDefault();
   if (draggedId !== null) {
-    // If the dragged square is outside the nested structure
     const draggedIndex = squares.indexOf(draggedId);
-    if (draggedIndex !== -1) {
-      // Remove the dragged square from its current position
+    // Move to outermost if not already
+    if (draggedIndex !== squares.length - 1) {
       squares.splice(draggedIndex, 1);
-      // Add it as the outermost square
       squares.push(draggedId);
       renderSquares(squares);
     }
