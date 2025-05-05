@@ -1,12 +1,11 @@
 const container = document.getElementById("container");
 const totalSquares = 4;
 const baseSize = 300;
-const paddingStep = 30; // Increased spacing
+const paddingStep = 30;
 const colors = ["#ffcccc", "#ccffcc", "#ccccff", "#ffe0b3"];
-let squares = [0, 1, 2, 3]; // The order of squares
+let squares = [0, 1, 2, 3];
 let draggedId = null;
 let draggedSquare = null;
-let draggingInside = false;
 
 function createSquare(id) {
   const square = document.createElement("div");
@@ -39,25 +38,10 @@ function createSquare(id) {
   square.addEventListener("drop", (e) => {
     e.stopPropagation();
     if (draggedId !== null && draggedId !== id) {
-      if (!draggingInside) {
-        swapSquares(draggedId, id);
-      }
+      const targetIndex = squares.indexOf(id);
+      const draggedIndex = squares.indexOf(draggedId);
+      [squares[draggedIndex], squares[targetIndex]] = [squares[targetIndex], squares[draggedIndex]];
       renderSquares(squares);
-    }
-  });
-
-  square.addEventListener("drag", (e) => {
-    if (draggedSquare) {
-      const rect = container.getBoundingClientRect();
-      const offsetX = e.clientX - rect.left - draggedSquare.clientWidth / 2;
-      const offsetY = e.clientY - rect.top - draggedSquare.clientHeight / 2;
-
-      // Prevent the square from moving outside the container
-      const maxX = rect.width - draggedSquare.clientWidth;
-      const maxY = rect.height - draggedSquare.clientHeight;
-
-      draggedSquare.style.left = Math.min(Math.max(0, offsetX), maxX) + "px";
-      draggedSquare.style.top = Math.min(Math.max(0, offsetY), maxY) + "px";
     }
   });
 
@@ -82,7 +66,6 @@ function swapSquares(draggedId, targetId) {
   const draggedIndex = squares.indexOf(draggedId);
   const targetIndex = squares.indexOf(targetId);
   if (draggedIndex !== -1 && targetIndex !== -1) {
-    // Swap positions in the array
     [squares[draggedIndex], squares[targetIndex]] = [squares[targetIndex], squares[draggedIndex]];
   }
 }
@@ -106,10 +89,13 @@ container.addEventListener("dragover", (e) => e.preventDefault());
 container.addEventListener("drop", (e) => {
   e.preventDefault();
   if (draggedId !== null) {
+    // If the dragged square is outside the nested structure
     const draggedIndex = squares.indexOf(draggedId);
-    if (draggedIndex !== 0) {
-      // Move it one level outward (swap with previous)
-      [squares[draggedIndex - 1], squares[draggedIndex]] = [squares[draggedIndex], squares[draggedIndex - 1]];
+    if (draggedIndex !== -1) {
+      // Remove the dragged square from its current position
+      squares.splice(draggedIndex, 1);
+      // Add it as the outermost square
+      squares.push(draggedId);
       renderSquares(squares);
     }
   }
