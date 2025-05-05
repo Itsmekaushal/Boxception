@@ -1,98 +1,102 @@
+
 const container = document.getElementById('container');
+const totalSquares = 4;
 const baseSize = 300;
 const paddingStep = 30;
 const colors = ['#ffcccc', '#ccffcc', '#ccccff', '#ffe0b3'];
+let squares = [0, 1, 2, 3];
 
-let squares = [0, 1, 2, 3]; // nesting order: index 0 = outermost
+let squareElements = {};
+let dragInfo = { id: null, offsetX: 0, offsetY: 0 };
 
 function createSquare(id) {
-  const square = document.createElement('div');
-  square.classList.add('square');
-  square.dataset.squareId = id;
-  square.style.backgroundColor = colors[id % colors.length];
+  const div = document.createElement('div');
+  div.className = 'square';
+  div.id = `square-${id}`;
+  div.style.backgroundColor = colors[id % colors.length];
+  div.setAttribute('data-id', id);
 
   const label = document.createElement('div');
-  label.classList.add('label');
-  label.textContent = id + 1;
-  square.appendChild(label);
+  label.className = 'label';
+  label.innerText = id + 1;
+  div.appendChild(label);
 
-  let offsetX = 0, offsetY = 0, isDragging = false;
+  container.appendChild(div);
+  squareElements[id] = div;
 
-  square.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    offsetX = e.clientX - square.getBoundingClientRect().left;
-    offsetY = e.clientY - square.getBoundingClientRect().top;
-    square.style.zIndex = 1000;
-    square.style.transition = 'none';
+  div.addEventListener('mousedown', (e) => {
+    dragInfo.id = id;
+    dragInfo.offsetX = e.offsetX;
+    dragInfo.offsetY = e.offsetY;
+    div.style.zIndex = 1000;
   });
+}
 
-  document.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      square.style.left = `${e.clientX - offsetX}px`;
-      square.style.top = `${e.clientY - offsetY}px`;
-    }
+function renderSquares() {
+  container.innerHTML = '';
+  squareElements = {};
+  squares.forEach((id, i) => {
+    createSquare(id);
+    const square = squareElements[id];
+    const padding = paddingStep * i;
+    const size = baseSize - padding * 2;
+    square.style.width = size + 'px';
+    square.style.height = size + 'px';
+    square.style.left = `calc(50% - ${size / 2}px)`;
+    square.style.top = `calc(50% - ${size / 2}px)`;
   });
+}
 
-  document.addEventListener('mouseup', (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    square.style.zIndex = 1;
-    square.style.transition = 'all 0.3s ease';
+function getBounding(id) {
+  return squareElements[id].getBoundingClientRect();
+}
 
-    const draggedId = parseInt(square.dataset.squareId);
-    const draggedRect = square.getBoundingClientRect();
+function isInside(inner, outer) {
+  const a = getBounding(inner);
+  const b = getBounding(outer);
+  return (
+    a.left >= b.left &&
+    a.top >= b.top &&
+    a.right <= b.right &&
+    a.bottom <= b.bottom
+  );
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (dragInfo.id !== null) {
+    const el = squareElements[dragInfo.id];
+    el.style.left = e.pageX - dragInfo.offsetX + 'px';
+    el.style.top = e.pageY - dragInfo.offsetY + 'px';
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragInfo.id !== null) {
     let targetId = null;
+    const draggedId = dragInfo.id;
+    const draggedEl = squareElements[draggedId];
 
-    for (const other of container.children) {
-      const otherId = parseInt(other.dataset.squareId);
-      if (otherId === draggedId) continue;
-      const otherRect = other.getBoundingClientRect();
-
-      if (isOverlapping(draggedRect, otherRect)) {
-        targetId = otherId;
+    for (let id of squares) {
+      if (id !== draggedId && isInside(draggedId, id)) {
+        targetId = id;
         break;
       }
     }
 
     if (targetId !== null) {
-      const idx1 = squares.indexOf(draggedId);
-      const idx2 = squares.indexOf(targetId);
-      [squares[idx1], squares[idx2]] = [squares[idx2], squares[idx1]];
+      const i1 = squares.indexOf(draggedId);
+      const i2 = squares.indexOf(targetId);
+      [squares[i1], squares[i2]] = [squares[i2], squares[i1]];
     } else {
-      // if dragged outside the outer boundary (i.e., dragged out of current nesting)
-      const idx = squares.indexOf(draggedId);
-      if (idx > 0) {
-        [squares[idx], squares[idx - 1]] = [squares[idx - 1], squares[idx]];
+      const currentIdx = squares.indexOf(draggedId);
+      if (currentIdx > 0) {
+        [squares[currentIdx], squares[currentIdx - 1]] = [squares[currentIdx - 1], squares[currentIdx]];
       }
     }
 
-    renderSquares(squares);
-  });
+    dragInfo.id = null;
+    renderSquares();
+  }
+});
 
-  return square;
-}
-
-function isOverlapping(r1, r2) {
-  return !(
-    r1.right < r2.left ||
-    r1.left > r2.right ||
-    r1.bottom < r2.top ||
-    r1.top > r2.bottom
-  );
-}
-
-function renderSquares(order) {
-  container.innerHTML = '';
-  order.forEach((id, index) => {
-    const padding = paddingStep * index;
-    const size = baseSize - padding * 2;
-    const square = createSquare(id);
-    square.style.width = size + 'px';
-    square.style.height = size + 'px';
-    square.style.top = `calc(50% - ${size / 2}px)`;
-    square.style.left = `calc(50% - ${size / 2}px)`;
-    container.appendChild(square);
-  });
-}
-
-renderSquares(squares);
+renderSquares();
