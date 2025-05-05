@@ -1,16 +1,14 @@
 const container = document.getElementById('container');
 const totalSquares = 4;
 const baseSize = 300;
-const paddingStep = 30; // Increased spacing
+const paddingStep = 30;
 const colors = ['#ffcccc', '#ccffcc', '#ccccff', '#ffe0b3'];
 let squares = [];
-let draggedId = null;
 
 function createSquare(id) {
   const square = document.createElement('div');
   square.classList.add('square');
   square.id = 'square-' + id;
-  square.setAttribute('draggable', true);
   square.style.backgroundColor = colors[id % colors.length];
 
   const label = document.createElement('div');
@@ -18,14 +16,27 @@ function createSquare(id) {
   label.textContent = id + 1;
   square.appendChild(label);
 
-  square.addEventListener('dragstart', () => {
-    draggedId = id;
-    setTimeout(() => (square.style.opacity = 0.4), 0);
+  // Dragging logic
+  let offsetX, offsetY, isDragging = false;
+
+  square.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    offsetX = e.clientX - square.getBoundingClientRect().left;
+    offsetY = e.clientY - square.getBoundingClientRect().top;
+    square.style.transition = 'none';
   });
 
-  square.addEventListener('dragend', () => {
-    square.style.opacity = 1;
-    draggedId = null;
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    square.style.left = `${e.clientX - offsetX}px`;
+    square.style.top = `${e.clientY - offsetY}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      square.style.transition = 'all 0.3s ease';
+    }
   });
 
   return square;
@@ -48,12 +59,3 @@ function renderSquares(order) {
 // Initial order
 squares = [0, 1, 2, 3];
 renderSquares(squares);
-
-container.addEventListener('dragover', (e) => e.preventDefault());
-
-container.addEventListener('drop', () => {
-  if (draggedId !== null) {
-    squares = [draggedId, ...squares.filter((id) => id !== draggedId)];
-    renderSquares(squares);
-  }
-});
