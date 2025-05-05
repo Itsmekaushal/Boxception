@@ -5,6 +5,7 @@ const paddingStep = 30;
 const colors = ["#ffcccc", "#ccffcc", "#ccccff", "#ffe0b3"];
 let squares = [0, 1, 2, 3];
 let draggedId = null;
+let droppedOnSquare = false;
 
 function createSquare(id) {
   const square = document.createElement("div");
@@ -20,21 +21,30 @@ function createSquare(id) {
 
   square.addEventListener("dragstart", (e) => {
     draggedId = id;
+    droppedOnSquare = false;
     square.style.opacity = 0.4;
     disableOtherSquares(id);
   });
 
   square.addEventListener("dragend", () => {
+    if (!droppedOnSquare && draggedId !== null) {
+      // Dragged outside all squares — make outermost
+      const draggedIndex = squares.indexOf(draggedId);
+      if (draggedIndex !== 0) {
+        [squares[0], squares[draggedIndex]] = [squares[draggedIndex], squares[0]];
+        renderSquares(squares);
+      }
+    }
     draggedId = null;
-    square.style.opacity = 1;
     enableAllSquares();
   });
 
   square.addEventListener("dragover", (e) => e.preventDefault());
 
   square.addEventListener("drop", (e) => {
-    e.stopPropagation();
+    e.preventDefault(); // No stopPropagation here
     if (draggedId !== null && draggedId !== id) {
+      droppedOnSquare = true;
       const targetIndex = squares.indexOf(id);
       const draggedIndex = squares.indexOf(draggedId);
       [squares[draggedIndex], squares[targetIndex]] = [squares[targetIndex], squares[draggedIndex]];
@@ -69,42 +79,14 @@ function renderSquares(order) {
     square.style.height = size + "px";
     square.style.top = `calc(50% - ${size / 2}px)`;
     square.style.left = `calc(50% - ${size / 2}px)`;
-    square.style.position = "absolute";
     container.appendChild(square);
   });
 }
 
+// Allow container to accept drop
 container.addEventListener("dragover", (e) => e.preventDefault());
-
 container.addEventListener("drop", (e) => {
-  if (draggedId !== null) {
-    const x = e.clientX;
-    const y = e.clientY;
-    const draggedIndex = squares.indexOf(draggedId);
-    let droppedInsideAny = false;
-
-    // Check if dropped inside any square
-    squares.forEach((id) => {
-      if (id !== draggedId) {
-        const rect = document.getElementById("square-" + id).getBoundingClientRect();
-        if (
-          x >= rect.left &&
-          x <= rect.right &&
-          y >= rect.top &&
-          y <= rect.bottom
-        ) {
-          droppedInsideAny = true;
-        }
-      }
-    });
-
-    // If not dropped inside any square, move to outermost
-    if (!droppedInsideAny && draggedIndex !== squares.length - 1) {
-      squares.splice(draggedIndex, 1);
-      squares.push(draggedId);
-      renderSquares(squares);
-    }
-  }
+  // Do nothing — logic handled on dragend if not dropped on square
 });
 
 // Initial render
