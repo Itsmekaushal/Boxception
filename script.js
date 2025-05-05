@@ -19,7 +19,7 @@ function createSquare(id) {
   label.textContent = id + 1;
   square.appendChild(label);
 
-  square.addEventListener("dragstart", (e) => {
+  square.addEventListener("dragstart", () => {
     draggedId = id;
     droppedOnSquare = false;
     square.style.opacity = 0.4;
@@ -27,28 +27,34 @@ function createSquare(id) {
   });
 
   square.addEventListener("dragend", () => {
+    enableAllSquares();
+    square.style.opacity = 1;
+
+    // If dropped outside any square but inside container
     if (!droppedOnSquare && draggedId !== null) {
-      // Dragged outside all squares — make outermost
       const draggedIndex = squares.indexOf(draggedId);
-      if (draggedIndex !== 0) {
-        [squares[0], squares[draggedIndex]] = [squares[draggedIndex], squares[0]];
+      if (draggedIndex > 0) {
+        // Move to outermost position
+        squares.splice(draggedIndex, 1);
+        squares.unshift(draggedId);
         renderSquares(squares);
       }
     }
+
     draggedId = null;
-    enableAllSquares();
   });
 
   square.addEventListener("dragover", (e) => e.preventDefault());
 
   square.addEventListener("drop", (e) => {
-    e.preventDefault(); // No stopPropagation here
+    e.preventDefault();
+    e.stopPropagation();
     if (draggedId !== null && draggedId !== id) {
-      droppedOnSquare = true;
       const targetIndex = squares.indexOf(id);
       const draggedIndex = squares.indexOf(draggedId);
       [squares[draggedIndex], squares[targetIndex]] = [squares[targetIndex], squares[draggedIndex]];
       renderSquares(squares);
+      droppedOnSquare = true;
     }
   });
 
@@ -83,10 +89,12 @@ function renderSquares(order) {
   });
 }
 
-// Allow container to accept drop
 container.addEventListener("dragover", (e) => e.preventDefault());
+
 container.addEventListener("drop", (e) => {
-  // Do nothing — logic handled on dragend if not dropped on square
+  e.preventDefault();
+  // Only mark drop occurred if it wasn't dropped on a square
+  if (!droppedOnSquare) droppedOnSquare = false;
 });
 
 // Initial render
