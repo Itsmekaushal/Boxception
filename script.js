@@ -69,6 +69,7 @@ function renderSquares(order) {
     square.style.height = size + "px";
     square.style.top = `calc(50% - ${size / 2}px)`;
     square.style.left = `calc(50% - ${size / 2}px)`;
+    square.style.position = "absolute";
     container.appendChild(square);
   });
 }
@@ -76,11 +77,29 @@ function renderSquares(order) {
 container.addEventListener("dragover", (e) => e.preventDefault());
 
 container.addEventListener("drop", (e) => {
-  e.preventDefault();
   if (draggedId !== null) {
+    const x = e.clientX;
+    const y = e.clientY;
     const draggedIndex = squares.indexOf(draggedId);
-    // Move to outermost if not already
-    if (draggedIndex !== squares.length - 1) {
+    let droppedInsideAny = false;
+
+    // Check if dropped inside any square
+    squares.forEach((id) => {
+      if (id !== draggedId) {
+        const rect = document.getElementById("square-" + id).getBoundingClientRect();
+        if (
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom
+        ) {
+          droppedInsideAny = true;
+        }
+      }
+    });
+
+    // If not dropped inside any square, move to outermost
+    if (!droppedInsideAny && draggedIndex !== squares.length - 1) {
       squares.splice(draggedIndex, 1);
       squares.push(draggedId);
       renderSquares(squares);
