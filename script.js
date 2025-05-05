@@ -1,14 +1,13 @@
 const container = document.getElementById('container');
-const totalSquares = 4;
 const baseSize = 300;
 const paddingStep = 30;
 const colors = ['#ffcccc', '#ccffcc', '#ccccff', '#ffe0b3'];
-let squares = [0, 1, 2, 3];
+
+let squares = [0, 1, 2, 3]; // nesting order: index 0 = outermost
 
 function createSquare(id) {
   const square = document.createElement('div');
   square.classList.add('square');
-  square.id = 'square-' + id;
   square.dataset.squareId = id;
   square.style.backgroundColor = colors[id % colors.length];
 
@@ -17,8 +16,7 @@ function createSquare(id) {
   label.textContent = id + 1;
   square.appendChild(label);
 
-  let offsetX = 0, offsetY = 0;
-  let isDragging = false;
+  let offsetX = 0, offsetY = 0, isDragging = false;
 
   square.addEventListener('mousedown', (e) => {
     isDragging = true;
@@ -36,46 +34,50 @@ function createSquare(id) {
   });
 
   document.addEventListener('mouseup', (e) => {
-    if (isDragging) {
-      isDragging = false;
-      square.style.transition = 'all 0.3s ease';
-      square.style.zIndex = 1;
+    if (!isDragging) return;
+    isDragging = false;
+    square.style.zIndex = 1;
+    square.style.transition = 'all 0.3s ease';
 
-      const targetRect = square.getBoundingClientRect();
+    const draggedId = parseInt(square.dataset.squareId);
+    const draggedRect = square.getBoundingClientRect();
+    let targetId = null;
 
-      // Check for overlap with other squares
-      for (const otherSquare of container.children) {
-        if (otherSquare === square) continue;
-        const otherRect = otherSquare.getBoundingClientRect();
+    for (const other of container.children) {
+      const otherId = parseInt(other.dataset.squareId);
+      if (otherId === draggedId) continue;
+      const otherRect = other.getBoundingClientRect();
 
-        if (isOverlapping(targetRect, otherRect)) {
-          const id1 = parseInt(square.dataset.squareId);
-          const id2 = parseInt(otherSquare.dataset.squareId);
-
-          // Swap positions in order array
-          const idx1 = squares.indexOf(id1);
-          const idx2 = squares.indexOf(id2);
-          [squares[idx1], squares[idx2]] = [squares[idx2], squares[idx1]];
-
-          renderSquares(squares);
-          return;
-        }
+      if (isOverlapping(draggedRect, otherRect)) {
+        targetId = otherId;
+        break;
       }
-
-      // If not dropped on another square, re-render to reset position
-      renderSquares(squares);
     }
+
+    if (targetId !== null) {
+      const idx1 = squares.indexOf(draggedId);
+      const idx2 = squares.indexOf(targetId);
+      [squares[idx1], squares[idx2]] = [squares[idx2], squares[idx1]];
+    } else {
+      // if dragged outside the outer boundary (i.e., dragged out of current nesting)
+      const idx = squares.indexOf(draggedId);
+      if (idx > 0) {
+        [squares[idx], squares[idx - 1]] = [squares[idx - 1], squares[idx]];
+      }
+    }
+
+    renderSquares(squares);
   });
 
   return square;
 }
 
-function isOverlapping(rect1, rect2) {
+function isOverlapping(r1, r2) {
   return !(
-    rect1.right < rect2.left ||
-    rect1.left > rect2.right ||
-    rect1.bottom < rect2.top ||
-    rect1.top > rect2.bottom
+    r1.right < r2.left ||
+    r1.left > r2.right ||
+    r1.bottom < r2.top ||
+    r1.top > r2.bottom
   );
 }
 
